@@ -7,3 +7,16 @@
 //
 
 import Foundation
+
+class Comment {
+    var comment: String
+    var imageUrl: String?
+    var authorName: String
+    
+    //MARK: Initialization
+    init(comment: String, imageUrl: String?, authorName: String) {
+        self.comment = comment
+        self.imageUrl = imageUrl
+        self.authorName = authorName
+    }
+}

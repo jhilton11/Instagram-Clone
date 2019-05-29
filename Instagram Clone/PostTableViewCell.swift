@@ -19,11 +19,13 @@ class PostTableViewCell: UITableViewCell {
     @IBOutlet weak var lastCommentImageView: UILabel!
     
     var delegate: PostTableViewCellDelegate?
+    var imageCache = NSCache<AnyObject, AnyObject>()
     var postId: String = ""
     
     override func awakeFromNib() {
         super.awakeFromNib()
         // Initialization code
+        //postImageView.image = nil
     }
 
     override func setSelected(_ selected: Bool, animated: Bool) {
@@ -67,17 +69,23 @@ class PostTableViewCell: UITableViewCell {
         
         let postImageUrl = post.imageUrl
         print("Image Url: \(postImageUrl)")
-        let storageRef = Storage.storage().reference(forURL: postImageUrl)
-        storageRef.getData(maxSize: 3 * 1024 * 1024) { (data, error) in
-            if let e = error {
-                print("Error has occured: \(e)")
-            } else {
-                if (data != nil) {
-                    let image = UIImage(data: data!)
-                    self.postImageView.image = image
-                    print("Image successfully loaded")
+        if let cachedImage = imageCache.object(forKey: postImageUrl as AnyObject) as? UIImage {
+            postImageView.image = cachedImage
+            print("Image loaded from cache")
+        } else {
+            let storageRef = Storage.storage().reference(forURL: postImageUrl)
+            storageRef.getData(maxSize: 3 * 1024 * 1024) { (data, error) in
+                if let e = error {
+                    print("Error has occured: \(e)")
                 } else {
-                    print("Data is nil")
+                    if (data != nil) {
+                        let image = UIImage(data: data!)
+                        self.imageCache.setObject(image!, forKey: postImageUrl as AnyObject)
+                        self.postImageView.image = image
+                        print("Image successfully loaded")
+                    } else {
+                        print("Data is nil")
+                    }
                 }
             }
         }

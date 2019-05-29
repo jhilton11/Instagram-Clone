@@ -268,6 +268,7 @@
                     </navigationItem>
                     <connections>
                         <outlet property="imageView" destination="SXO-JG-miB" id="8Pb-qc-zuV"/>
+                        <outlet property="saveButton" destination="kV8-Xn-nbS" id="xiE-Yu-Gws"/>
                         <outlet property="textField" destination="R45-xu-VE8" id="6r7-Gd-hyD"/>
                         <segue destination="oVr-8f-V78" kind="unwind" identifier="unwindToPosts" unwindAction="unwindToMenuWithSegue:" id="sdJ-Tj-G8I"/>
                     </connections>

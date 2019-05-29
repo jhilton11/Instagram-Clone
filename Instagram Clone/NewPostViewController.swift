@@ -15,6 +15,8 @@ class NewPostViewController: UIViewController, UIImagePickerControllerDelegate, 
 
     @IBOutlet weak var imageView: UIImageView!
     @IBOutlet weak var textField: UITextField!
+    @IBOutlet weak var saveButton: UIBarButtonItem!
+    var spinner = UIActivityIndicatorView(activityIndicatorStyle: UIActivityIndicatorViewStyle.whiteLarge)
     
     var postsRef: DatabaseReference!
     var storageRef: StorageReference!
@@ -25,6 +27,7 @@ class NewPostViewController: UIViewController, UIImagePickerControllerDelegate, 
     var location: String?
     var lastComment: String?
     var authorImageUrl: String?
+    var isKeyboardDisplayed: Bool = false
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -33,10 +36,42 @@ class NewPostViewController: UIViewController, UIImagePickerControllerDelegate, 
         initializaComp()
         presentImagePicker()
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: NSNotification.Name.UIKeyboardWillShow, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: NSNotification.Name.UIKeyboardWillHide, object: nil)
+    }
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
+    }
+    
+    @objc func handleTapGesture() {
+        if (isKeyboardDisplayed) {
+            self.view.endEditing(true)
+        } else {
+            presentImagePicker()
+        }
+    }
+    
+    @objc func keyboardWillShow(notification: Notification) {
+        isKeyboardDisplayed = true;
+        guard let keyboardinfo = notification.userInfo?[UIKeyboardFrameEndUserInfoKey] as? NSValue else {
+            return
+        }
+        let keyboardFrame = keyboardinfo.cgRectValue
+        
+        if (self.view.frame.origin.y == 0) {
+            self.view.frame.origin.y -= keyboardFrame.height
+        }
+    }
+    
+    @objc func keyboardWillHide(notification: Notification) {
+        isKeyboardDisplayed = false
+        if (self.view.frame.origin.y != 0) {
+            self.view.frame.origin.y = 0
+        }
     }
     
     func initializaComp()->Void {
@@ -48,6 +83,17 @@ class NewPostViewController: UIViewController, UIImagePickerControllerDelegate, 
         }
         print("Username is \(name)")
         location = nil
+        
+        //add tap gesture recognizer to imageView
+        let tap = UITapGestureRecognizer(target: self, action: #selector(handleTapGesture))
+        imageView.isUserInteractionEnabled = true
+        imageView.addGestureRecognizer(tap)
+        
+        // setup the loading activity indicator
+        spinner.hidesWhenStopped = true;
+        spinner.center = view.center
+        spinner.stopAnimating()
+        view.addSubview(spinner)
     }
     
     func presentImagePicker()->Void {
@@ -57,17 +103,19 @@ class NewPostViewController: UIViewController, UIImagePickerControllerDelegate, 
     }
 
     @IBAction func savePost(_ sender: Any) {
+        spinner.startAnimating()
+        saveButton.isEnabled = false
         postsRef = Database.database().reference().child("post")
         let key = postsRef.childByAutoId().key!
         id = key
         storageRef = Storage.storage().reference().child("post-images").child("\(key).jpg")
         
         if let tempImage = image {
-            if let data = UIImagePNGRepresentation(tempImage) {
-                //let mData = StorageMetadata()
-                //mData.contentType = "image/jpeg";
+            if let data = UIImageJPEGRepresentation(tempImage, 0.75){
+                let mData = StorageMetadata()
+                mData.contentType = "image/jpeg";
                 print("Image has been successfully converted to data")
-                storageRef.putData(data, metadata: nil) {(metadata, error) in
+                storageRef.putData(data, metadata: mData) {(metadata, error) in
                     guard error == nil else {
                         print("Error has occurred")
                         return
@@ -83,9 +131,13 @@ class NewPostViewController: UIViewController, UIImagePickerControllerDelegate, 
                         {(error: Error?, ref: DatabaseReference) in
                             if let err = error {
                                 print("\(err)")
+                                self.spinner.stopAnimating()
+                                self.saveButton.isEnabled = true
                             } else {
                                 //Data saved successfully
                                 self.performSegue(withIdentifier: "unwindToPosts", sender: self)
+                                self.spinner.stopAnimating()
+                                self.saveButton.isEnabled = true
                             }
                         }
                     }
