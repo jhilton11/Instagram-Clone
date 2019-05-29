@@ -5,3 +5,4 @@ This is a long term project that will continue until nearly every feature on the
 ## The features are:
 - UI with semblance with the Instagram app.
 - Posting pictures from the picture gallery into the database (Firebase Realtime Database and Firebase Storage).
+- View posted images. Images are loaded fast into the UIImageviews and are also cached to improve Network usage.
